@@ -1,0 +1,8 @@
+streamlit
+langgraph
+langchain
+langchain-core
+pydantic>=2.0
+apscheduler
+pandas
+openpyxl
