@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 import pandas as pd
 import streamlit as st
 
-from scheduler import scheduler_status, start_background_scheduler, trigger_immediate_run
+from google_service import google_auth_status
+from scheduler import dispatch_approved_reply_for_record, scheduler_status, start_background_scheduler, trigger_immediate_run
 from tracker import (
     get_pending_reviews,
     init_tracker,
@@ -22,8 +23,14 @@ st.title("Executive Inbound & Meeting Scheduler Agent")
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = f"streamlit-{int(datetime.now(timezone.utc).timestamp())}"
 
+if "live_sync_enabled" not in st.session_state:
+    st.session_state.live_sync_enabled = False
+
+if "scheduler_mode" not in st.session_state:
+    st.session_state.scheduler_mode = "MOCK"
+
 if "scheduler_started" not in st.session_state:
-    start_background_scheduler(interval_seconds=30)
+    start_background_scheduler(interval_seconds=30, data_source=st.session_state.scheduler_mode)
     st.session_state.scheduler_started = True
 
 if "last_refresh" not in st.session_state:
@@ -48,13 +55,37 @@ col3.metric("Auto-Archived Non-Meetings", auto_archived_count)
 
 with st.sidebar:
     st.subheader("Operations")
-    if st.button("Simulate Scheduled Inbound Run", use_container_width=True):
-        processed = trigger_immediate_run()
+
+    live_sync_enabled = st.toggle(
+        "Live Google Sync",
+        value=st.session_state.live_sync_enabled,
+        help="Switch between local mock test cases and real Gmail/Calendar API",
+    )
+
+    st.session_state.live_sync_enabled = live_sync_enabled
+    requested_mode = "LIVE" if live_sync_enabled else "MOCK"
+
+    auth = google_auth_status()
+    if requested_mode == "LIVE":
+        if auth.get("token_valid"):
+            st.success("Google token: valid")
+        else:
+            st.warning(f"Google token unavailable: {auth.get('detail', 'unknown issue')} (fallback to MOCK)")
+
+    if requested_mode != st.session_state.scheduler_mode:
+        start_background_scheduler(interval_seconds=30, data_source=requested_mode)
+        st.session_state.scheduler_mode = requested_mode
+
+    fetch_button_label = "Fetch Live Inbox & Process" if live_sync_enabled else "Simulate Scheduled Inbound Run"
+    if st.button(fetch_button_label, use_container_width=True):
+        processed, mode_message = trigger_immediate_run(data_source=requested_mode)
         st.session_state.last_refresh = datetime.now(timezone.utc).isoformat()
         if processed:
-            st.success(f"Processed inbound: {processed[0]['email_id']}")
+            st.success(f"Processed {len(processed)} inbound item(s).")
         else:
             st.info("No new inbox messages were available.")
+        if "mock" in mode_message.lower() and live_sync_enabled:
+            st.warning(mode_message)
 
     st.caption(f"Session thread: {st.session_state.thread_id}")
     st.caption(f"Last refresh: {st.session_state.last_refresh}")
@@ -76,6 +107,7 @@ with review_tab:
         with left:
             st.subheader("Raw Inbound Message")
             st.write(f"**Sender:** {selected.get('sender', 'Unknown Sender')}")
+            st.write(f"**Subject:** {selected.get('subject', 'No Subject')}")
             st.write(f"**Received:** {selected.get('received_timestamp', '')}")
             st.text_area(
                 "Message Body",
@@ -88,6 +120,7 @@ with review_tab:
             st.subheader("Extracted Metadata")
             st.write(f"**Topic:** {selected.get('topic', '') or 'N/A'}")
             st.write(f"**Company:** {selected.get('company', '') or 'N/A'}")
+            st.write(f"**Data Source:** {selected.get('data_source', 'MOCK')}")
             link = selected.get("booking_url", "")
             st.write(f"**Booking Link Detected:** {'Yes' if bool(link) else 'No'}")
             if link:
@@ -114,9 +147,19 @@ with review_tab:
             action_col1, action_col2 = st.columns(2)
             with action_col1:
                 if st.button("Approve & Dispatch", use_container_width=True):
-                    update_status_and_notes(selected["email_id"], "Approved & Sent", notes, edited_draft)
-                    st.success("Item approved and marked as sent.")
-                    st.rerun()
+                    record_mode = str(selected.get("data_source", "MOCK")).upper()
+                    success, dispatch_message = dispatch_approved_reply_for_record(
+                        email_id=selected["email_id"],
+                        final_draft=edited_draft,
+                        data_source=record_mode,
+                    )
+                    if success:
+                        update_status_and_notes(selected["email_id"], "Approved & Sent", notes, edited_draft)
+                        st.toast("Approval dispatched successfully.")
+                        st.success(dispatch_message)
+                        st.rerun()
+                    else:
+                        st.error(f"Dispatch failed: {dispatch_message}")
             with action_col2:
                 if st.button("Reject / Archive", use_container_width=True):
                     update_status_and_notes(selected["email_id"], "Rejected / Archived", notes, edited_draft)
@@ -128,11 +171,15 @@ with ledger_tab:
     ledger_df = load_all_records()
     editable_columns = [
         "email_id",
+        "thread_id",
         "received_date",
+        "subject",
+        "recipient",
         "sender",
         "company",
         "topic",
         "status",
+        "data_source",
         "has_booking_link",
         "selected_or_offered_slots",
         "draft_preview",

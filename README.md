@@ -27,6 +27,16 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## Optional Live Google Sync
+
+To use real Gmail + Google Calendar:
+
+1. Place `credentials.json` in the repository root.
+2. Place your working OAuth `token.json` in the repository root.
+3. In the Streamlit sidebar, enable **Live Google Sync**.
+
+If token validation/refresh fails, the app automatically falls back to MOCK mode and continues running.
+
 ## Operating Flow
 
 1. Background scheduler ingests mock inbound messages.

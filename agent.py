@@ -108,7 +108,8 @@ def classify_and_extract(state: AgentState) -> AgentState:
 def calendar_skill(state: AgentState) -> AgentState:
     """Populate available calendar slots from a deterministic calendar skill."""
 
-    state["available_calendar_slots"] = list(_CALENDAR_SLOTS)
+    existing_slots = state.get("available_calendar_slots", [])
+    state["available_calendar_slots"] = list(existing_slots or _CALENDAR_SLOTS)
     return state
 
 
@@ -249,15 +250,28 @@ def _details_from_state(value: Any) -> Optional[MeetingDetails]:
     return None
 
 
-def run_agent(email_id: str, received_timestamp: str, raw_email_body: str) -> AgentState:
+def run_agent(
+    email_id: str,
+    thread_id: str,
+    sender: str,
+    recipient: str,
+    subject: str,
+    received_timestamp: str,
+    raw_email_body: str,
+    available_calendar_slots: Optional[List[str]] = None,
+) -> AgentState:
     """Run one inbound message through the autonomous meeting triage graph."""
 
     initial_state: AgentState = {
         "email_id": email_id,
+        "thread_id": thread_id,
+        "sender": sender,
+        "recipient": recipient,
+        "subject": subject,
         "received_timestamp": received_timestamp,
         "raw_email_body": raw_email_body,
         "extracted_details": None,
-        "available_calendar_slots": [],
+        "available_calendar_slots": available_calendar_slots or [],
         "draft_response": None,
         "validation_passed": False,
         "validation_notes": None,
@@ -283,11 +297,15 @@ def state_to_tracker_record(state: AgentState) -> Dict[str, str]:
 
     return {
         "email_id": state.get("email_id", ""),
+        "thread_id": state.get("thread_id", ""),
         "received_date": state.get("received_timestamp", "")[:10],
-        "sender": details.sender_name if details else "Unknown Sender",
+        "subject": state.get("subject", ""),
+        "recipient": state.get("recipient", ""),
+        "sender": details.sender_name if details and details.sender_name != "Unknown Sender" else state.get("sender", "Unknown Sender"),
         "company": details.company_or_organization if details else "",
         "topic": details.topic_or_context if details else "",
         "status": "Pending Review" if state.get("status") == "Pending Review" else "Rejected / Archived",
+        "data_source": "LIVE" if str(state.get("thread_id", "")).strip() else "MOCK",
         "has_booking_link": bool(details.has_booking_link) if details else False,
         "selected_or_offered_slots": selected_or_offered,
         "draft_preview": state.get("draft_response") or "",

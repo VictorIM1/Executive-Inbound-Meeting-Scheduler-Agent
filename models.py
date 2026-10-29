@@ -23,6 +23,10 @@ class AgentState(TypedDict):
     """LangGraph state contract for processing one inbound email."""
 
     email_id: str
+    thread_id: str
+    sender: str
+    subject: str
+    recipient: str
     received_timestamp: str
     raw_email_body: str
     extracted_details: Optional[MeetingDetails]
