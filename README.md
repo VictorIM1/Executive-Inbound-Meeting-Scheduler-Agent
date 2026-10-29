@@ -1,11 +1,11 @@
-# 👔 Executive Inbound & Meeting Scheduler Agent
+# 📬 Executive Inbound & Meeting Scheduler Agent
 
-> An autonomous, Human-in-the-Loop (HITL) agentic workflow orchestrating inbound email classification, calendar availability validation, and context-aware response dispatching.
+> **An autonomous, guardrailed scheduling concierge with LangGraph orchestration, calendar availability validation, and Human-in-the-Loop review.**
 
-[![Watch Demo Video](https://img.shields.io/badge/Loom-Watch_Live_Demo-625DF5?style=for-the-badge&logo=loom&logoColor=white)](LINK_CATRE_LOOM_AICI)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)](https://www.python.org/)
-[![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-orange?style=for-the-badge)](https://langchain-ai.github.io/langgraph/)
-[![Streamlit](https://img.shields.io/badge/UI-Streamlit-red?style=for-the-badge&logo=streamlit)](https://streamlit.io/)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-orange.svg)](https://github.com/langchain-ai/langgraph)
+[![Streamlit](https://img.shields.io/badge/UI-Streamlit-red.svg)](https://streamlit.io/)
+[![Demo Video](https://img.shields.io/badge/YouTube-Watch%20Demo-red?logo=youtube)](https://www.youtube.com/watch?v=bAqVuo0frVw)
 
 ---
 
