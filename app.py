@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 
 import pandas as pd
@@ -16,6 +17,12 @@ from tracker import (
     to_record_dicts,
     update_status_and_notes,
 )
+
+try:
+    from google_services import dispatch_real_email_reply, get_gmail_service
+except ImportError:
+    get_gmail_service = None
+    dispatch_real_email_reply = None
 
 st.set_page_config(page_title="Executive Inbound & Meeting Scheduler Agent", layout="wide")
 st.title("Executive Inbound & Meeting Scheduler Agent")
@@ -56,6 +63,7 @@ col3.metric("Auto-Archived Non-Meetings", auto_archived_count)
 with st.sidebar:
     st.subheader("Operations")
 
+<<<<<<< Updated upstream
     live_sync_enabled = st.toggle(
         "Live Google Sync",
         value=st.session_state.live_sync_enabled,
@@ -86,6 +94,31 @@ with st.sidebar:
             st.info("No new inbox messages were available.")
         if "mock" in mode_message.lower() and live_sync_enabled:
             st.warning(mode_message)
+=======
+    # Modul Live este acum ACTIV implicit (value=True) pentru demo
+    live_sync = st.toggle(
+        "Live Google Sync",
+        value=True,
+        help="Comută între date locale mock și interogarea/trimiterea reală prin Gmail API",
+    )
+
+    if live_sync:
+        has_token = os.path.exists("token.json")
+        st.caption("🟢 Conectat la Gmail" if has_token else "🟠 Necesită autorizare la prima rulare")
+        run_button_label = "Fetch Live Inbox & Process"
+    else:
+        st.caption("⚪ Folosește date mock locale")
+        run_button_label = "Simulate Scheduled Inbound Run"
+
+    if st.button(run_button_label, use_container_width=True):
+        processed = trigger_immediate_run(live_mode=live_sync)
+        st.session_state.last_refresh = datetime.now(timezone.utc).isoformat()
+        if processed:
+            st.success(f"Processed: {len(processed)} message(s)")
+        else:
+            st.info("No new inbox messages were available.")
+        st.rerun()
+>>>>>>> Stashed changes
 
     st.caption(f"Session thread: {st.session_state.thread_id}")
     st.caption(f"Last refresh: {st.session_state.last_refresh}")
@@ -131,7 +164,7 @@ with review_tab:
             st.write(f"**Verified Free Calendar Slots:** {selected.get('validated_slots', '') or 'N/A'}")
             valid = str(selected.get("validation_passed", "")).lower() in {"true", "1"}
             if valid:
-                st.success("✅ Validated against live calendar")
+                st.success("✅ Validated against availability rules")
             else:
                 st.warning("⚠️ Validation failed or not applicable")
             st.caption(selected.get("validation_notes", ""))
@@ -142,10 +175,15 @@ with review_tab:
                 height=210,
                 key=f"draft-{selected['email_id']}",
             )
-            notes = st.text_input("Executive Notes", value=str(selected.get("executive_notes", "")), key=f"note-{selected['email_id']}")
+            notes = st.text_input(
+                "Executive Notes",
+                value=str(selected.get("executive_notes", "")),
+                key=f"note-{selected['email_id']}",
+            )
 
             action_col1, action_col2 = st.columns(2)
             with action_col1:
+<<<<<<< Updated upstream
                 if st.button("Approve & Dispatch", use_container_width=True):
                     record_mode = str(selected.get("data_source", "MOCK")).upper()
                     success, dispatch_message = dispatch_approved_reply_for_record(
@@ -160,6 +198,31 @@ with review_tab:
                         st.rerun()
                     else:
                         st.error(f"Dispatch failed: {dispatch_message}")
+=======
+                if st.button("Approve & Dispatch", use_container_width=True, type="primary"):
+                    is_real_email = not str(selected["email_id"]).startswith("demo-")
+                    
+                    if live_sync and is_real_email and get_gmail_service and dispatch_real_email_reply:
+                        try:
+                            service = get_gmail_service()
+                            recipient = selected.get("sender", "")
+                            dispatch_real_email_reply(
+                                gmail_service=service,
+                                to_email=recipient,
+                                subject=selected.get("topic", "Interviu"),
+                                body_text=edited_draft,
+                                thread_id=selected["email_id"],
+                            )
+                            st.toast(f"Email trimis cu succes către {recipient}!", icon="🚀")
+                        except Exception as e:
+                            st.error(f"Eroare la trimiterea prin Gmail: {e}")
+                            st.stop()  # Oprește execuția pentru a nu marca eronat ca "Sent"
+
+                    update_status_and_notes(selected["email_id"], "Approved & Sent", notes, edited_draft)
+                    st.success("Item approved and dispatched.")
+                    st.rerun()
+
+>>>>>>> Stashed changes
             with action_col2:
                 if st.button("Reject / Archive", use_container_width=True):
                     update_status_and_notes(selected["email_id"], "Rejected / Archived", notes, edited_draft)

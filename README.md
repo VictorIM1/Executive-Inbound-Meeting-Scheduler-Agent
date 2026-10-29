@@ -1,32 +1,27 @@
-# Executive Inbound & Meeting Scheduler Agent
+# 👔 Executive Inbound & Meeting Scheduler Agent
 
-Production-style technical interview demo for an autonomous inbound triage system with a Human-in-the-Loop (HITL) executive review inbox.
+> An autonomous, Human-in-the-Loop (HITL) agentic workflow orchestrating inbound email classification, calendar availability validation, and context-aware response dispatching.
 
-## Features
+[![Watch Demo Video](https://img.shields.io/badge/Loom-Watch_Live_Demo-625DF5?style=for-the-badge&logo=loom&logoColor=white)](LINK_CATRE_LOOM_AICI)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)](https://www.python.org/)
+[![LangGraph](https://img.shields.io/badge/Orchestration-LangGraph-orange?style=for-the-badge)](https://langchain-ai.github.io/langgraph/)
+[![Streamlit](https://img.shields.io/badge/UI-Streamlit-red?style=for-the-badge&logo=streamlit)](https://streamlit.io/)
 
-- Autonomous background polling with APScheduler (configurable interval).
-- LangGraph state workflow with deterministic extraction, drafting, and guardrail validation.
-- Defensive validation to ensure draft slots only reference verified free calendar slots.
-- Streamlit executive dashboard for approving/rejecting queued actions.
-- Excel-backed tracker (`meetings_tracker.xlsx`) with pandas in-memory fallback.
+---
 
-## Project Structure
+## 🎯 Executive Summary & Value Proposition
 
-- `models.py`: Pydantic models and typed graph state.
-- `agent.py`: LangGraph pipeline and guardrail node.
-- `tracker.py`: Excel persistence helpers and review queue operations.
-- `scheduler.py`: Autonomous background poller + mock inbox.
-- `app.py`: Streamlit HITL dashboard.
+Executive inboxes are inundated with non-actionable emails, newsletters, and scheduling back-and-forth. This agent serves as an autonomous gatekeeper and scheduling co-pilot:
 
-## Quick Start
+1. **Noise Reduction:** Triages and archives newsletters and non-actionable inbound traffic autonomously.
+2. **Intent & Entity Extraction:** Extracts meeting context, company identity, and dates across multiple languages (English & Romanian).
+3. **Availability Guardrails:** Validates candidate slots against deterministic calendar availability constraints to prevent double-booking.
+4. **Human-in-the-Loop (HITL) Governance:** Empowers leadership to inspect, edit, and approve drafts before physical dispatch via the Gmail API.
+5. **Auditable Ledger:** Automatically synchronizes interaction history and executive notes into persistent storage (`meetings_tracker.xlsx`).
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app.py
-```
+---
 
+<<<<<<< Updated upstream
 ## Optional Live Google Sync
 
 To use real Gmail + Google Calendar:
@@ -38,9 +33,20 @@ To use real Gmail + Google Calendar:
 If token validation/refresh fails, the app automatically falls back to MOCK mode and continues running.
 
 ## Operating Flow
+=======
+## 🏛️ System Architecture
+>>>>>>> Stashed changes
 
-1. Background scheduler ingests mock inbound messages.
-2. Agent classifies meeting intent, checks deterministic availability, drafts response.
-3. Guardrail validates all mentioned slots against known available slots.
-4. Valid meeting inbounds are queued as **Pending Review**.
-5. Executive approves/edits/rejects from Streamlit action queue.
+```mermaid
+graph TD
+    A[Gmail Inbound Poller] -->|Raw Payload| B[LangGraph StateGraph]
+    B --> C{Triage & Classifier}
+    C -->|Newsletter / Cold Spam| D[Archive Node]
+    C -->|Meeting / Interview Intent| E[Calendar Skill & Guardrail]
+    E --> F[Contextual Response Drafter]
+    F --> G[Validation Gatekeeper]
+    G --> H[Human-in-the-Loop Review Queue]
+    H -->|Approve & Dispatch| I[Gmail API Reply Dispatcher]
+    H -->|Reject / Archive| D
+    I --> J[Auditable Excel Ledger]
+    D --> J

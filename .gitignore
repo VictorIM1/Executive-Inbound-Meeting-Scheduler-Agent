@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+meetings_tracker.xlsx
+*.xlsx
+*.db
+*.sqlite3
+.env
+# Google OAuth & Tokens
+credentials.json*
+token.json
+*.json:Zone.Identifier
